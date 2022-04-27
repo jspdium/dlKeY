@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE why3session PUBLIC "-//Why3//proof session v5//EN"
+"http://why3.lri.fr/why3session.dtd">
+<why3session shape_version="6">
+<prover id="0" name="Alt-Ergo" version="2.4.0" timelimit="5" steplimit="0" memlimit="1000"/>
+<prover id="1" name="CVC4" version="1.8" timelimit="5" steplimit="0" memlimit="1000"/>
+<prover id="2" name="Z3" version="4.8.6" timelimit="1" steplimit="0" memlimit="1000"/>
+<file format="whyml" proved="true">
+<path name=".."/><path name="dl.why"/>
+<theory name="Exprs_Updates" proved="true">
+ <goal name="sizeU_pos&#39;vc" expl="VC for sizeU_pos" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.03" steps="6410"/></proof>
+ </goal>
+ <goal name="sizeE_pos&#39;vc" expl="VC for sizeE_pos" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.03" steps="6074"/></proof>
+ </goal>
+ <goal name="eval_upd_dom&#39;vc" expl="VC for eval_upd_dom" proved="true">
+ <proof prover="1"><result status="valid" time="0.22" steps="20162"/></proof>
+ </goal>
+</theory>
+<theory name="Programs" proved="true">
+ <goal name="size&#39;vc" expl="VC for size" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.04" steps="26334"/></proof>
+ </goal>
+ <goal name="IfSeqTrue" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.04" steps="34779"/></proof>
+ </goal>
+ <goal name="IfSeqFalse" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.04" steps="36149"/></proof>
+ </goal>
+ <goal name="WhileSeqTrue" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.04" steps="36839"/></proof>
+ </goal>
+ <goal name="WhileSeqFalse" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.04" steps="35584"/></proof>
+ </goal>
+ <goal name="SeqSeq" proved="true">
+ <proof prover="0"><result status="valid" time="0.38" steps="3366"/></proof>
+ </goal>
+</theory>
+<theory name="Semantics" proved="true">
+ <goal name="deduction" proved="true">
+ <proof prover="0"><result status="valid" time="3.21" steps="29981"/></proof>
+ </goal>
+ <goal name="valid_Uskip" proved="true">
+ <proof prover="0"><result status="valid" time="0.11" steps="1041"/></proof>
+ </goal>
+ <goal name="validUT_lm" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.04" steps="44425"/></proof>
+ </goal>
+ <goal name="validUT_triple" proved="true">
+ <proof prover="0"><result status="valid" time="0.06" steps="598"/></proof>
+ </goal>
+</theory>
+<theory name="Rules" proved="true">
+ <goal name="if_rule" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.04" steps="63195"/></proof>
+ </goal>
+ <goal name="core_while_rule" proved="true">
+ <transf name="induction_pr" proved="true" >
+  <goal name="core_while_rule.0" proved="true">
+  <proof prover="2" timelimit="5"><result status="valid" time="0.02" steps="3542"/></proof>
+  </goal>
+  <goal name="core_while_rule.1" proved="true">
+  <proof prover="2" timelimit="5"><result status="valid" time="0.02" steps="3554"/></proof>
+  </goal>
+  <goal name="core_while_rule.2" proved="true">
+  <proof prover="2" timelimit="5"><result status="valid" time="0.02" steps="3754"/></proof>
+  </goal>
+  <goal name="core_while_rule.3" proved="true">
+  <proof prover="2" timelimit="5"><result status="valid" time="0.02" steps="3658"/></proof>
+  </goal>
+  <goal name="core_while_rule.4" proved="true">
+  <proof prover="2" timelimit="5"><result status="valid" time="0.02" steps="3662"/></proof>
+  </goal>
+  <goal name="core_while_rule.5" proved="true">
+  <proof prover="0"><result status="valid" time="0.07" steps="614"/></proof>
+  </goal>
+  <goal name="core_while_rule.6" proved="true">
+  <proof prover="2" timelimit="5"><result status="valid" time="0.03" steps="47549"/></proof>
+  </goal>
+ </transf>
+ </goal>
+ <goal name="seq_assign_rule" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.04" steps="55935"/></proof>
+ </goal>
+ <goal name="seq_while_rule" proved="true">
+ <proof prover="0"><result status="valid" time="2.58" steps="28066"/></proof>
+ </goal>
+</theory>
+<theory name="ReverseRules" proved="true">
+ <goal name="expressiveness" proved="true">
+ <proof prover="1"><result status="valid" time="0.09" steps="16014"/></proof>
+ </goal>
+ <goal name="skip_rule_rev" proved="true">
+ <proof prover="0"><result status="valid" time="0.09" steps="807"/></proof>
+ </goal>
+ <goal name="assign_rule_rev" proved="true">
+ <proof prover="0"><result status="valid" time="0.10" steps="952"/></proof>
+ </goal>
+ <goal name="while_rule_revFsqb" proved="true">
+ <proof prover="0"><result status="valid" time="0.36" steps="4756"/></proof>
+ </goal>
+ <goal name="seq_assign_rule_rev" proved="true">
+ <proof prover="0"><result status="valid" time="0.21" steps="1750"/></proof>
+ </goal>
+ <goal name="seq_while_rule_rev_Fsqb" proved="true">
+ <proof prover="0"><result status="valid" time="1.32" steps="14316"/></proof>
+ </goal>
+</theory>
+<theory name="DLSoundnessCompleteness" proved="true">
+ <goal name="infUT_sound_complete&#39;vc" expl="VC for infUT_sound_complete" proved="true">
+ <transf name="split_vc" proved="true" >
+  <goal name="infUT_sound_complete&#39;vc.0" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="77003"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.1" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="77291"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.2" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.05" steps="76958"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.3" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="72610"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.4" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="77024"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.5" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.05" steps="77796"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.6" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="78559"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.7" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="77367"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.8" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="77659"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.9" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="73892"/></proof>
+  </goal>
+  <goal name="infUT_sound_complete&#39;vc.10" expl="postcondition" proved="true">
+  <transf name="split_vc" proved="true" >
+   <goal name="infUT_sound_complete&#39;vc.10.0" expl="postcondition" proved="true">
+   <transf name="split_vc" proved="true" >
+    <goal name="infUT_sound_complete&#39;vc.10.0.0" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.04" steps="72247"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.0.1" expl="postcondition" proved="true">
+    <proof prover="1" timelimit="1"><result status="valid" time="0.10" steps="18900"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.0.2" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.06" steps="167241"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.0.3" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.04" steps="80264"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.0.4" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.05" steps="105916"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.0.5" expl="postcondition" proved="true">
+    <proof prover="1" timelimit="1"><result status="valid" time="0.10" steps="19185"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.0.6" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.07" steps="207410"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.0.7" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.04" steps="84781"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.0.8" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.04" steps="82171"/></proof>
+    </goal>
+   </transf>
+   </goal>
+   <goal name="infUT_sound_complete&#39;vc.10.1" expl="postcondition" proved="true">
+   <transf name="split_vc" proved="true" >
+    <goal name="infUT_sound_complete&#39;vc.10.1.0" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.04" steps="79356"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.1.1" expl="postcondition" proved="true">
+    <proof prover="0" timelimit="1"><result status="valid" time="0.77" steps="8431"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.1.2" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.05" steps="141405"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.1.3" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.32" steps="1517764"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.1.4" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.05" steps="148632"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.1.5" expl="postcondition" proved="true">
+    <proof prover="0" timelimit="1"><result status="valid" time="0.25" steps="2699"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.1.6" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.12" steps="493119"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.1.7" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.05" steps="138712"/></proof>
+    </goal>
+    <goal name="infUT_sound_complete&#39;vc.10.1.8" expl="postcondition" proved="true">
+    <proof prover="2"><result status="valid" time="0.05" steps="111448"/></proof>
+    </goal>
+   </transf>
+   </goal>
+  </transf>
+  </goal>
+ </transf>
+ </goal>
+</theory>
+</file>
+</why3session>

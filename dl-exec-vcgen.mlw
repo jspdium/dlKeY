@@ -1,0 +1,96 @@
+
+
+module VCGenExtr
+
+use dl.Semantics
+use dl.SystemDL
+use "dl-vcgen".VCGenDL
+use "dl-vcgen".FOLformulas
+use "upd-simpl".UpdateApplication
+use "upd-simpl".Simplification
+use set.Fset
+use option.Option
+
+(* the inductive update type can be used in programs     *)
+(* but sets have to be refined to an implementation type *)
+(* -- will use SetImp from the Why3 library              *)
+
+clone set.SetImp with type elt = fmlaFOL  
+
+(* give a specific name to this set type *)
+type vcSet = SetImp.set
+
+
+function impset2set (vcs:vcSet) : fset fmlaFOL = vcs.to_fset
+
+
+
+(* Function to add all elements of a set to another *)
+
+let rec addSet (s':vcSet) (s:vcSet) : unit  = 
+    writes  { s, s' }	
+    ensures { impset2set s == union (impset2set (old s')) (impset2set (old s)) }
+while not (is_empty s') do
+    invariant { union (impset2set s') (impset2set s) == union (impset2set (old s')) (impset2set (old s)) }
+    variant   { cardinal s' }
+    let q = choose_and_remove s'
+    in  add q s
+done
+
+
+
+let addFOLex (p:fmla) (s:vcSet) : unit = 
+    requires { stmt_freeF p /\ upd_freeF p }
+    writes   { s }
+    ensures  { impset2set s = addFOL p (impset2set (old s)) }
+add (toFOL p) s
+
+
+
+let rec vcgex (p:fmla) (u:upd) (c:stmt) (q:fmla) : vcSet =
+    requires { stmt_freeF p /\ upd_freeF p /\ parUpd u /\ progInv c /\ stmt_freeF q }
+    ensures  { valid_fmlas (impset2set result) -> valid_fmlas (vcgen p u c q) }
+    variant  { size c }
+let vcs = empty() in    
+match c with 
+      | Sskip -> addFOLex (Fimplies p (applyF u q)) vcs;
+      	      	 vcs
+      | Sassign x e -> addFOLex (Fimplies p (applyF u (applyF (Uassign x e) q))) vcs;   
+      	      	       vcs
+      | Sif b c1 c2 -> addSet (vcgex (Fand p (applyF u (Fembed b))) u c1 q) vcs; 
+      	      	       addSet (vcgex (Fand p (applyF u (Fnot (Fembed b)))) u c2 q) vcs;
+      	      	       vcs
+      | Swhile b ainv cb -> addFOLex (Fimplies p (applyF u ainv)) vcs;
+      	  	    	    addFOLex (Fimplies (Fand ainv (Fnot (Fembed b))) (simplF q)) vcs;
+			    addSet (vcgex (Fand ainv (Fembed b)) Uskip cb ainv) vcs;
+      	      	 	    vcs
+      | Sseq (Sskip) cc -> addSet (vcgex p u cc q) vcs;
+      	      	     	   vcs
+      | Sseq (Sassign x e) cc -> addSet (vcgex p (concat u (applyU u (Uassign x e))) cc q) vcs;
+      	      			 vcs
+      | Sseq (Sif b c1 c2) cc -> addSet (vcgex (Fand p (applyF u (Fembed b))) u (Sseq c1 cc) q) vcs;
+      	      	     	       	 addSet (vcgex (Fand p (applyF u (Fnot (Fembed b)))) u (Sseq c2 cc) q) vcs;
+      	      			 vcs
+      | Sseq (Swhile b ainv cb) cc -> addFOLex (Fimplies p (applyF u ainv)) vcs;
+      	  	    	       	      addSet (vcgex (Fand ainv (Fembed b)) Uskip cb ainv) vcs;
+      			     	      addSet (vcgex (Fand ainv (Fnot (Fembed b))) Uskip cc q) vcs;
+      	      			      vcs
+      |	Sseq (Sseq c1 c2) cc -> addSet (vcgex p u (Sseq c1 (Sseq c2 cc)) q) vcs;
+      	      	      	     	vcs
+end				   
+
+
+
+
+(* Top-level VCGen *)
+
+let vcgen_main (p:fmla) (c:stmt) (q:fmla) =
+    requires { stmt_freeF p /\ progInv c /\ stmt_freeF q }
+    ensures { valid_fmlas (impset2set result) -> validUT p Uskip c q }
+vcgex (simplF p) Uskip c q
+
+
+
+
+end
+

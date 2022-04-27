@@ -1,0 +1,232 @@
+
+
+module UpdateApplication
+
+use export dl.Semantics
+
+
+
+(* Equality predicate to be used in programs *)
+
+let predicate eq (x y:ident) =
+    ensures { result <-> x = y }
+let MkIdent n = x in
+let MkIdent m = y in
+m = n
+
+
+(* program version of indom predicate *)
+
+let rec predicate indom_exec (y:ident) (u:upd) =
+    ensures { result = indom y u }
+match u  with
+    | Uskip -> false
+    | Uassign x _ -> eq y x
+    | Upar u1 u2 -> indom_exec y u1 || indom_exec y u2
+    | Uupd _ u2 -> indom_exec y u2
+end			  
+
+
+
+(* Parallel updates are right splines of Uassign *)
+(* without occurrences of updates in expressions *)
+(* but the same lhs may occur more than once     *)
+
+predicate parUpd (u:upd) =
+match u with
+      | Uskip -> true 
+      | Uassign _ e -> upd_freeE e
+      | Upar (Uassign _ e) u -> upd_freeE e /\ parUpd u
+      | _ -> False
+end
+
+
+
+(* Compose, as a parallel update, two normalized parallel updates *)
+
+let rec function concat (u1:upd) (u2:upd) : upd =
+    requires { parUpd u1 /\ parUpd u2 }
+    ensures  { parUpd result }
+    ensures  { equivUpd result (Upar u1 u2) }
+    variant  { u1, u2 } 
+match u1 with
+        | Uskip -> u2
+	| Uassign _ _ -> Upar u1 u2
+        | Upar u1a u1b -> concat u1a (concat u1b u2)
+	| _ -> absurd
+end	     
+
+
+
+(* update lookup -- "righmtost modification wins" semantics *)
+
+let rec function lookup (u:upd) (x:ident) : expr =
+    requires { parUpd u }
+    ensures  { equivExp result (Eupd u (Evar x)) }
+    ensures  { upd_freeE result }
+    variant  { u } 
+match u with
+      | Uskip -> Evar x
+      | Uassign y e' -> if eq x y then e'
+			else Evar x
+      | Upar (Uassign y e) ub -> if eq x y && not (indom_exec x ub) then e
+			       	 else lookup ub x
+      | _ -> absurd
+end
+
+
+
+
+(* Applies a normalized parallel update to an expression *)
+
+let rec function applyE (u:upd) (e:expr) : expr =
+    requires { parUpd u }
+    ensures  { equivExp result (Eupd u e) }
+    ensures  { upd_freeE result }
+    variant  { sizeE e }
+match e with
+      | Econst n -> Econst n
+      | Evar x -> lookup u x
+      | Ebin e1 op e2 -> Ebin (applyE u e1) op (applyE u e2)
+      | Eupd u' e' -> applyE (concat u (applyU u u')) e'
+end
+
+
+
+(* Applies a normalized parallel update to an (any) update *)
+
+with function applyU (u:upd) (u':upd) : upd =
+    requires { parUpd u }
+    ensures  { parUpd result }
+    ensures  { equivUpd result (Uupd u u') }
+    variant  { sizeU u' }
+match u' with
+       | Uskip -> Uskip
+       | Uassign x e -> Uassign x (applyE u e)
+       | Upar ua ub -> concat (applyU u ua) (applyU u ub)
+       | Uupd ua ub -> applyU (concat u (applyU u ua)) ub
+end
+
+
+
+(* Applies a normalized parallel update to a Boolean expression *)
+
+let rec function  applyB (u: upd) (b: bexpr) : bexpr =
+    requires { parUpd u }
+    ensures  { equivBexp result (Bupd u b) }
+    ensures  { upd_freeB result }
+    variant  { b }
+match b with
+      | Bcomp e1 bop e2 -> Bcomp (applyE u e1) bop (applyE u e2) 
+      | Btrue -> Btrue
+      | Bfalse -> Bfalse
+      | Band b1 b2 -> Band (applyB u b1) (applyB u b2) 
+      | Bor b1 b2 -> Bor (applyB u b1) (applyB u b2) 
+      | Bnot b1 -> Bnot (applyB u b1) 
+      | Bupd u' b -> applyB (concat u (applyU u u')) b
+end
+
+
+
+
+(* Applies a normalized parallel update to a formula *)
+
+let rec function applyF (u: upd) (p: fmla) : fmla =
+    requires { parUpd u }
+    requires { stmt_freeF p }
+    ensures  { stmt_freeF result /\ upd_freeF result }
+    ensures  { equiv result (Fupd u p) }
+    variant  { p }
+match p with
+      | Fcomp e1 bop e2 -> Fcomp (applyE u e1) bop (applyE u e2) 
+      | Fembed b ->  Fembed (applyB u b)
+      | Ftrue -> Ftrue
+      | Ffalse -> Ffalse
+      | Fand p1 p2 ->  Fand (applyF u p1) (applyF u p2) 
+      | For p1 p2 ->  For (applyF u p1) (applyF u p2) 
+      | Fnot p1 -> Fnot (applyF u p1) 
+      | Fimplies p1 p2 -> Fimplies (applyF u p1) (applyF u p2) 
+      | Fsqb _ _ -> absurd
+      | Fupd u' p -> applyF (concat u (applyU u u')) p
+end
+
+
+end
+
+
+
+
+
+module Simplification 
+
+use export UpdateApplication
+
+
+let rec function simplE (e:expr) : expr =
+    ensures { upd_freeE result }
+    ensures { equivExp e result }
+    variant { e }
+match e with
+      | Econst n -> Econst n
+      | Evar x -> Evar x
+      | Ebin e1 op e2 -> Ebin (simplE e1) op (simplE e2) 
+      | Eupd u e' -> applyE (simplU u) e'
+end
+
+with function simplU (u:upd) : upd =
+    ensures { parUpd result }
+    ensures { equivUpd u result }
+    variant { u }
+match u with
+      | Uskip -> Uskip 
+      | Uassign x e -> Uassign x (simplE e)
+      | Upar u1 u2 -> let u1s = simplU u1 in
+		      let u2s = simplU u2 in
+		      concat u1s u2s
+      | Uupd u1 u2 -> let u1s = simplU u1 in
+		      applyU u1s u2
+end     
+
+
+let rec function  simplB (b: bexpr) : bexpr =
+    ensures { upd_freeB result }
+    ensures { equivBexp b result }
+    variant { b }
+match b with
+      | Bcomp e1 bop e2 -> Bcomp (simplE e1) bop (simplE e2) 
+      | Btrue -> Btrue
+      | Bfalse -> Bfalse
+      | Band b1 b2 -> Band (simplB b1) (simplB b2) 
+      | Bor b1 b2 -> Bor (simplB b1) (simplB b2) 
+      | Bnot b1 -> Bnot (simplB b1) 
+      | Bupd u' b -> applyB (simplU u') b
+end
+
+
+let rec function simplF (p: fmla) : fmla =
+    requires { stmt_freeF p }
+    ensures  { stmt_freeF result /\ upd_freeF result }
+    ensures  { equiv p result }
+    variant  { p }
+match p with
+      | Fcomp e1 bop e2 -> Fcomp (simplE e1) bop (simplE e2) 
+      | Fembed b ->  Fembed (simplB b)
+      | Ftrue -> Ftrue
+      | Ffalse -> Ffalse
+      | Fand p1 p2 ->  Fand (simplF p1) (simplF p2) 
+      | For p1 p2 ->  For (simplF p1) (simplF p2) 
+      | Fnot p1 -> Fnot (simplF p1) 
+      | Fimplies p1 p2 -> Fimplies (simplF p1) (simplF p2) 
+      | Fsqb _ _ -> absurd
+      | Fupd u' p -> applyF (simplU u') p
+end
+
+
+end
+
+
+
+
+
+
+

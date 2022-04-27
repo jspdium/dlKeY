@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE why3session PUBLIC "-//Why3//proof session v5//EN"
+"http://why3.lri.fr/why3session.dtd">
+<why3session shape_version="6">
+<prover id="0" name="CVC4" version="1.8" timelimit="5" steplimit="0" memlimit="1000"/>
+<file format="whyml" proved="true">
+<path name=".."/><path name="examples.why"/>
+<theory name="ValidityTests" proved="true">
+ <goal name="TestValidTripleSimpleProg1" proved="true">
+ <proof prover="0"><result status="valid" time="0.25" steps="57400"/></proof>
+ </goal>
+ <goal name="TestValidTripleSimpleProg2" proved="true">
+ <proof prover="0"><result status="valid" time="0.27" steps="57400"/></proof>
+ </goal>
+ <goal name="TestValidTripleSwapProg" proved="true">
+ <proof prover="0"><result status="valid" time="3.23" steps="467429"/></proof>
+ </goal>
+ <goal name="TestValidTripleAltSwapProg" proved="true">
+ <proof prover="0"><result status="valid" time="2.62" steps="419167"/></proof>
+ </goal>
+</theory>
+<theory name="InferenceTests" proved="true">
+ <goal name="TestInfSimpleProg0" proved="true">
+ <proof prover="0"><result status="valid" time="0.10" steps="18791"/></proof>
+ </goal>
+ <goal name="TestInfSimpleProg1" proved="true">
+ <proof prover="0"><result status="valid" time="0.13" steps="20406"/></proof>
+ </goal>
+ <goal name="TestInfSimpleProg2" proved="true">
+ <proof prover="0"><result status="valid" time="0.11" steps="20406"/></proof>
+ </goal>
+ <goal name="TestInfSwapProg" proved="true">
+ <proof prover="0"><result status="valid" time="0.19" steps="30246"/></proof>
+ </goal>
+ <goal name="TestInfAltSwapProg" proved="true">
+ <proof prover="0"><result status="valid" time="0.15" steps="27345"/></proof>
+ </goal>
+</theory>
+</file>
+</why3session>

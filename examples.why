@@ -1,0 +1,122 @@
+
+
+theory ValidityTests
+
+use dl.Semantics
+
+
+(* Example triples tested for validity *)
+
+goal TestValidTripleSimpleProg1 :
+     let x = MkIdent 0 in
+     let y = MkIdent 1 in
+     let prog = Sseq (Sassign y (Ebin (Evar y) Oplus (Econst 10))) Sskip in 
+     let p = Fcomp (Evar y) BOeq (Evar x) in
+     let q = Fcomp (Evar y) BOeq (Ebin (Evar x) Oplus (Econst 10)) in
+     validUT p Uskip prog q
+
+
+goal TestValidTripleSimpleProg2 :
+     let x = MkIdent 0 in
+     let y = MkIdent 1 in
+     let prog = Sseq (Sassign y (Ebin (Evar y) Oplus (Econst 10))) Sskip in 
+     let p = Fcomp (Evar y) BOeq (Evar x) in
+     let q = Fcomp (Evar y) BOeq (Ebin (Evar x) Oplus (Econst 10)) in
+     validUT p Uskip prog q
+
+
+goal TestValidTripleSwapProg :
+     let x = MkIdent 0 in
+     let y = MkIdent 1 in
+     let t = MkIdent 2 in
+     let a = MkIdent 3 in
+     let b = MkIdent 4 in
+     let swap = Sseq (Sassign t (Evar x))
+     	      	     (Sseq (Sassign x (Evar y))
+		     	   (Sassign y (Evar t))) in
+     let p = Fand (Fcomp (Evar x) BOeq (Evar a)) (Fcomp (Evar y) BOeq (Evar b)) in
+     let q = Fand (Fcomp (Evar y) BOeq (Evar a)) (Fcomp (Evar x) BOeq (Evar b)) in
+     validUT p Uskip swap q
+
+
+goal TestValidTripleAltSwapProg :
+     let x = MkIdent 0 in
+     let y = MkIdent 1 in
+     let t = MkIdent 2 in
+     let a = MkIdent 3 in
+     let b = MkIdent 4 in
+     let swap = Sseq (Sseq  (Sassign t (Evar x))
+     	      	     	    (Sassign x (Evar y)))
+		     (Sassign y (Evar t)) in
+     let p = Fand (Fcomp (Evar x) BOeq (Evar a)) (Fcomp (Evar y) BOeq (Evar b)) in
+     let q = Fand (Fcomp (Evar y) BOeq (Evar a)) (Fcomp (Evar x) BOeq (Evar b)) in
+     validUT p Uskip swap q
+
+
+end
+
+
+
+
+theory InferenceTests
+
+use dl.SystemDL
+
+
+(* Example inferences *)
+
+goal TestInfSimpleProg0 :
+     let x = MkIdent 0 in
+     let y = MkIdent 1 in
+     let p = Fcomp (Evar y) BOeq (Evar x) in
+     infUT Ftrue Uskip (Sassign x (Evar y)) p
+
+
+goal TestInfSimpleProg1 :
+     let x = MkIdent 0 in
+     let y = MkIdent 1 in
+     let prog = Sseq (Sassign y (Ebin (Evar y) Oplus (Econst 10))) Sskip in 
+     let p = Fcomp (Evar y) BOeq (Evar x) in
+     let q = Fcomp (Evar y) BOeq (Ebin (Evar x) Oplus (Econst 10)) in
+     infUT p Uskip prog q
+
+
+goal TestInfSimpleProg2 :
+     let x = MkIdent 0 in
+     let y = MkIdent 1 in
+     let prog = Sseq (Sassign y (Ebin (Evar y) Oplus (Econst 10))) Sskip in 
+     let p = Fcomp (Evar y) BOeq (Evar x) in
+     let q = Fcomp (Evar y) BOeq (Ebin (Evar x) Oplus (Econst 10)) in
+     infUT p Uskip prog q
+
+
+goal TestInfSwapProg :
+     let x = MkIdent 0 in
+     let y = MkIdent 1 in
+     let t = MkIdent 2 in
+     let a = MkIdent 3 in
+     let b = MkIdent 4 in
+     let swap = Sseq (Sassign t (Evar x))
+     	      	(Sseq  (Sassign x (Evar y))
+		(Sseq (Sassign y (Evar t))
+		 Sskip)) in
+     let p = Fand (Fcomp (Evar x) BOeq (Evar a)) (Fcomp (Evar y) BOeq (Evar b)) in
+     let q = Fand (Fcomp (Evar y) BOeq (Evar a)) (Fcomp (Evar x) BOeq (Evar b)) in
+     infUT p Uskip swap q
+
+
+goal TestInfAltSwapProg :
+     let x = MkIdent 0 in
+     let y = MkIdent 1 in
+     let t = MkIdent 2 in
+     let a = MkIdent 3 in
+     let b = MkIdent 4 in
+     let swap = Sseq (Sseq (Sassign t (Evar x))
+     	      	     	   (Sassign x (Evar y)))
+		     (Sassign y (Evar t)) in
+     let p = Fand (Fcomp (Evar x) BOeq (Evar a)) (Fcomp (Evar y) BOeq (Evar b)) in
+     let q = Fand (Fcomp (Evar y) BOeq (Evar a)) (Fcomp (Evar x) BOeq (Evar b)) in
+     infUT p Uskip swap q
+
+end
+

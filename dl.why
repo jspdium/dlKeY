@@ -1,0 +1,599 @@
+
+
+theory Exprs_Updates
+
+use export map.Map 
+use export int.Int
+
+
+(* expressions and updates *)
+
+type ident =
+   | MkIdent int
+       
+type operator = Oplus | Ominus | Omult
+
+type expr = | Econst int
+  | Evar ident
+  | Ebin expr operator expr
+  | Eupd upd expr
+with upd = 
+     | Uskip
+     | Uassign ident expr
+     | Upar upd upd
+     | Uupd upd upd
+
+
+
+(* domain of an update - membership *)
+
+predicate indom (y:ident) (u:upd) =
+match u  with
+      | Uskip -> False
+      | Uassign x _ -> y = x
+      | Upar u1 u2 -> indom y u1 \/ indom y u2
+      | Uupd _ u2 -> indom y u2
+end			  
+
+predicate upd_freeE (e:expr) =
+match e with
+      | Econst _ -> True
+      | Evar _ -> True
+      | Ebin e1 _ e2 -> upd_freeE e1 /\ upd_freeE e2 
+      | Eupd _ _ -> False
+end
+
+
+
+(* termination measures for later functions *)
+
+function sizeE (e:expr) : int =
+match e with
+      | Econst _ -> 1
+      | Evar _ -> 1
+      | Ebin e1 _ e2 -> 1 + sizeE e1 + sizeE e2
+      | Eupd u e -> sizeU u + sizeE e
+end
+
+with sizeU (u:upd) : int =
+match u with
+      | Uskip -> 1
+      | Uassign _ e -> 1 + sizeE e
+      | Upar u1 u2 -> 1 + sizeU u1 + sizeU u2
+      | Uupd u u' -> 1 + sizeU u + sizeU u'
+end
+
+
+(* lemma function also mutually recursive *)
+
+let rec lemma sizeU_pos (u:upd) =
+    ensures { sizeU u >= 0 }
+match u with
+      | Uskip -> ()
+      | Uassign _ e -> sizeE_pos e
+      | Upar u1 u2 -> sizeU_pos u1 ; sizeU_pos u2 
+      | Uupd u u' -> sizeU_pos u ; sizeU_pos u'
+end
+
+with lemma sizeE_pos (e:expr) =
+    ensures { sizeE e >= 0 }
+match e with
+      | Econst _ -> ()
+      | Evar _ -> ()
+      | Ebin e1 _ e2 -> sizeE_pos e1 ; sizeE_pos e2 
+      | Eupd u e -> sizeU_pos u ; sizeE_pos e
+end
+
+
+
+(* program states and expression evaluation *) 
+
+type state = map ident int
+
+function eval_bin (x:int) (op:operator) (y:int) : int =
+match op with | Oplus -> x+y | Ominus -> x-y | Omult -> x*y end
+
+(* mutually recursive evaluation *)
+
+function eval_expr (s:state) (e:expr) : int =
+match e with
+      | Econst n -> n
+      | Evar x -> get s x
+      | Ebin e1 op e2 -> eval_bin (eval_expr s e1) op (eval_expr s e2)
+      |	Eupd u e -> eval_expr (eval_upd s u s) e
+      end
+with eval_upd (s:state) (u:upd) : state -> state =
+match u with
+      | Uskip -> fun s' -> s' 
+      | Uassign x e -> fun s' -> set s' x (eval_expr s e)
+      | Upar u1 u2 -> fun s' -> eval_upd s u2 (eval_upd s u1 s')
+      | Uupd u1 u2 -> fun s' -> let si = eval_upd s u1 s
+	 	       	  in eval_upd si u2 s'
+end			  
+
+
+
+(* variables not in the domain of update u have their values preserved   *)
+(* regardless of the state in which u is interpreted                     *)
+(* and variables in its domain are updated to values that depend only on *)
+(* the interpretation state; not on their previous values                *)
+
+let rec lemma eval_upd_dom (u:upd) =
+    ensures { forall s s' :state, x :ident. not (indom x u) -> eval_upd s u s' x = s' x }
+    ensures { forall s s' s'' :state, x :ident. indom x u -> eval_upd s u s' x = eval_upd s u s'' x }
+match u with
+      | Uskip -> ()
+      | Uassign _ _ -> ()
+      | Upar u1 u2 -> eval_upd_dom u1 ; eval_upd_dom u2 
+      | Uupd u u' -> eval_upd_dom u ; eval_upd_dom u'
+end
+
+
+(* update andd expression equivalence *)
+
+predicate equivUpd (u1:upd) (u2:upd) =
+	  forall s s' :state. eval_upd s u1 s' = eval_upd s u2 s'
+
+predicate equivExp (e1:expr) (e2:expr) =
+	  forall s :state. eval_expr s e1 = eval_expr s e2
+
+end
+
+
+
+
+
+
+theory Programs
+
+use export Exprs_Updates
+
+
+(* Boolean expressions *)
+
+type boperator = BOeq | BOlt | BOlteq | BOgt | BOgteq 
+
+type bexpr =
+     | Bcomp expr boperator expr
+     | Btrue
+     | Bfalse
+     | Band bexpr bexpr
+     | Bor bexpr bexpr
+     | Bnot bexpr
+     | Bupd upd bexpr
+
+predicate upd_freeB (b:bexpr) =
+match b with
+      | Bcomp e1 _ e2 -> upd_freeE e1 /\ upd_freeE e2
+      | Btrue -> true 
+      | Bfalse -> true
+      | Band b1 b2 -> upd_freeB b1 /\ upd_freeB b2
+      | Bor b1 b2 -> upd_freeB b1 /\ upd_freeB b2
+      | Bnot b1 -> upd_freeB b1
+      | Bupd _ _ -> False
+end
+
+predicate eval_bop (x:int) (bop:boperator) (y:int) =
+match bop with
+      | BOeq -> x = y
+      | BOlt -> x < y
+      | BOlteq -> x <= y
+      | BOgt -> x > y
+      | BOgteq -> x >= y
+end  
+
+predicate eval_bexpr (s:state) (b:bexpr) =
+match b with
+      | Bcomp e1 bop e2 -> eval_bop  (eval_expr s e1) bop (eval_expr s e2) 
+      | Btrue -> true 
+      | Bfalse -> false
+      | Band b1 b2 -> (eval_bexpr s b1) /\ (eval_bexpr s b2) 
+      | Bor b1 b2 ->  (eval_bexpr s b1) \/ (eval_bexpr s b2) 
+      | Bnot b1 -> not (eval_bexpr s b1) 
+      | Bupd u b -> eval_bexpr (eval_upd s u s) b
+end
+
+predicate equivBexp (b1:bexpr) (b2:bexpr) =
+	  forall s :state. eval_bexpr s b1 = eval_bexpr s b2
+
+
+
+
+(* formulas and programs, mutually defined *)
+(* since programs contain invariants       *)
+
+type fmla =
+     | Fcomp expr boperator expr
+     | Fembed bexpr
+     | Ftrue
+     | Ffalse
+     | Fand fmla fmla
+     | For fmla fmla
+     | Fnot fmla
+     | Fimplies fmla fmla
+     | Fsqb stmt fmla			(* box modality *)
+     | Fupd upd fmla    
+
+with stmt = 
+     | Sskip
+     | Sassign ident expr
+     | Sif bexpr stmt stmt
+     | Swhile bexpr fmla stmt  
+     | Sseq stmt stmt
+
+
+predicate upd_freeF (p:fmla) =
+match p with 
+     | Fcomp e1 _ e2 -> upd_freeE e1 /\ upd_freeE e2
+     | Fembed b -> upd_freeB b
+     | Ftrue -> True
+     | Ffalse -> True
+     | Fand p1 p2 -> upd_freeF p1 /\ upd_freeF p2 
+     | For p1 p2 -> upd_freeF p1 /\ upd_freeF p2 
+     | Fnot p -> upd_freeF p
+     | Fimplies p1 p2 -> upd_freeF p1 /\ upd_freeF p2 
+     | Fsqb _ p -> upd_freeF p
+     | Fupd _ _ -> False
+end
+
+predicate stmt_freeF (p:fmla) =
+match p with 
+     | Fcomp _ _ _ -> True
+     | Fembed _ -> True
+     | Ftrue -> True
+     | Ffalse -> True
+     | Fand p1 p2 -> stmt_freeF p1 /\ stmt_freeF p2 
+     | For p1 p2 -> stmt_freeF p1 /\ stmt_freeF p2 
+     | Fnot p -> stmt_freeF p
+     | Fimplies p1 p2 -> stmt_freeF p1 /\ stmt_freeF p2 
+     | Fsqb _ _ -> False
+     | Fupd _ p -> stmt_freeF p
+end
+
+
+
+(* "well-formed" programs                                    *)
+(* -- expressions are free of updates                        *)
+(* -- loop invariants are free of updates and box modalities *)
+
+predicate progInv (c:stmt) =
+match c with 
+     | Sskip -> True
+     | Sassign _ e -> upd_freeE e 
+     | Sif b c1 c2 -> upd_freeB b /\ progInv c1 /\ progInv c2
+     | Swhile b inv c  -> upd_freeB b /\ stmt_freeF inv /\ upd_freeF inv /\ progInv c
+     | Sseq c1 c2 -> progInv c1 /\ progInv c2
+end
+
+
+let rec function size (c:stmt) : int =
+    ensures { result >= 0 }
+match c with
+| Sskip -> 1
+| Sassign _ _ -> 1
+| Sif _ c1 c2 -> 1 + size c1 + size c2
+| Sseq c1 c2 -> 1 + 2*size c1 + size c2
+| Swhile _ _ c -> 1 + size c
+end
+
+
+
+
+
+(* Natural Semantics                             *)
+(* must be defined before semantics of formulas, *)
+(* which in DL relies on program evaluation      *)
+
+inductive big_step state stmt state =
+
+| big_step_skip:
+  forall s:state. big_step s Sskip s
+      
+| big_step_assign:
+  forall s:state, e:expr, x:ident.
+  	 big_step s (Sassign x e) (set s x (eval_expr s e))  
+
+| big_step_seq:
+  forall s1 s2 s3:state, c1 c2:stmt.
+  	 big_step s1 c1 s2  ->
+  	 big_step s2 c2 s3  ->
+  	 big_step s1 (Sseq c1 c2) s3 
+
+| big_step_if_true: 
+  forall s s':state, b:bexpr, c1 c2:stmt.
+  	 eval_bexpr s b ->
+         big_step s c1 s'-> 
+         big_step s (Sif b c1 c2) s'
+
+| big_step_if_false: 
+  forall s s':state, b:bexpr, c1 c2:stmt.
+  	 not (eval_bexpr s b) ->
+         big_step s c2 s' -> 
+         big_step s (Sif b c1 c2) s'
+
+| big_step_while_true:
+  forall s s' s'':state, b:bexpr, i:fmla, c:stmt.
+      	 eval_bexpr s b ->
+         big_step s c s'  ->
+         big_step s' (Swhile b i c) s'' ->
+         big_step s (Swhile b i c) s'' 
+
+| big_step_while_false:
+  forall s:state, b:bexpr, i:fmla, c:stmt.
+      	 not (eval_bexpr s b) ->
+         big_step s (Swhile b i c) s
+
+
+
+lemma IfSeqTrue:
+forall b :bexpr, c1 c2 c :stmt, s s' :state.
+       big_step s (Sseq (Sif b c1 c2) c) s' -> 
+       eval_bexpr s b ->
+       big_step s (Sseq c1 c) s'
+ 
+lemma IfSeqFalse:
+forall b :bexpr, c1 c2 c :stmt, s s' :state.
+       big_step s (Sseq (Sif b c1 c2) c) s' -> 
+       eval_bexpr s (Bnot b) ->
+       big_step s (Sseq c2 c) s' 
+
+lemma WhileSeqTrue:
+forall b :bexpr, c, cc :stmt, s s' :state, inv :fmla.
+       big_step s (Sseq c (Sseq (Swhile b inv c) cc)) s' ->
+       eval_bexpr s b ->
+       big_step s (Sseq (Swhile b inv c) cc) s'
+ 
+lemma WhileSeqFalse:
+forall b :bexpr, c, cc :stmt, s s' :state, inv :fmla.
+       big_step s cc s' ->
+       eval_bexpr s (Bnot b) ->
+       big_step s (Sseq (Swhile b inv c) cc) s'
+
+lemma SeqSeq:
+forall c1 c2 c:stmt, s s' :state.
+       big_step s (Sseq c1 (Sseq c2 c)) s'
+       <->
+       big_step s (Sseq (Sseq c1 c2) c) s'
+
+end
+
+
+
+
+theory Semantics
+
+use export Programs
+
+
+(* semantics of formulas *)
+
+predicate satisfies (s:state) (p:fmla) =
+match p with
+      | Fcomp e1 bop e2 -> eval_bop  (eval_expr s e1) bop (eval_expr s e2) 
+      | Fembed b ->  (eval_bexpr s b)
+      | Ftrue -> true 
+      | Ffalse -> false
+      | Fand p1 p2 -> (satisfies s p1) /\ (satisfies s p2) 
+      | For p1 p2 ->  (satisfies s p1) \/ (satisfies s p2) 
+      | Fnot p1 -> not (satisfies s p1) 
+      | Fimplies p1 p2 -> (not (satisfies s p1)) \/ (satisfies s p2)
+      | Fsqb c p ->  forall s' :state. big_step s c s' -> satisfies s' p
+      | Fupd u p ->  satisfies (eval_upd s u s) p
+end
+
+
+predicate valid_fmla (p:fmla) = forall s:state. satisfies s p
+
+predicate equiv (p:fmla) (q:fmla) =
+	  forall s :state. satisfies s p <-> satisfies s q
+
+lemma deduction:
+      forall p q :fmla.
+      (forall s: state. satisfies s p -> satisfies s q)
+      <->
+      valid_fmla (Fimplies p q)
+
+
+
+
+(* Update triples *) 
+
+predicate validUT (p:fmla) (u:upd) (c:stmt) (q:fmla) = valid_fmla (Fimplies p  (Fupd u (Fsqb c q)))
+
+lemma valid_Uskip : forall p q :fmla, c :stmt.
+      		    validUT p Uskip c q  <-> valid_fmla (Fimplies p  (Fsqb c q))
+
+lemma validUT_lm : forall p :fmla, u :upd, c:stmt, q:fmla.
+      		   validUT p u c q <-> forall s:state. not (satisfies s p) \/ satisfies s (Fupd u (Fsqb c q))
+
+lemma validUT_triple : forall p:fmla, u:upd, c:stmt, q:fmla.
+      (validUT p  u c q)
+      <->
+      (forall s s':state. satisfies s p -> big_step (eval_upd s u s) c s' -> satisfies s' q)
+
+
+end
+
+
+
+
+
+
+theory Rules
+
+use export Semantics
+
+
+lemma if_rule:
+forall p q:fmla, c1 c2 :stmt, b:bexpr, u:upd.
+       validUT (Fand p (Fupd u (Fembed b))) u c1 q ->
+       validUT (Fand p (Fupd u (Fnot (Fembed b)))) u c2 q ->
+       validUT p u (Sif b c1 c2) q
+
+(* requires predicate induction *)
+
+lemma core_while_rule:
+forall c:stmt, b:bexpr, inv ainv :fmla.
+       (forall s s':state. satisfies s (Fand inv (Fembed b)) ->  big_step s c s'->  satisfies s' inv) ->
+       forall s s':state. satisfies s inv -> big_step s (Swhile b ainv c) s' -> satisfies s' (Fand inv (Fnot (Fembed b)))
+
+lemma seq_assign_rule:
+forall p:fmla, q:fmla, x:ident, e:expr, i:stmt, u:upd.
+       validUT p (Upar u (Uupd u (Uassign x e))) i q ->
+       validUT p u (Sseq (Sassign x e) i) q
+
+lemma seq_while_rule:
+forall p q inv ainv:fmla, c cc:stmt, b:bexpr, u:upd.
+       valid_fmla (Fimplies p (Fupd u inv)) ->
+       validUT (Fand inv (Fembed b)) Uskip c inv ->
+       validUT (Fand inv (Fnot (Fembed b))) Uskip cc q ->
+       validUT p u (Sseq (Swhile b ainv c) cc) q
+
+end
+
+
+
+
+theory SystemDL
+
+use export Semantics
+
+
+(* Inference system for Dynamic Logic update sequents *)
+
+inductive infUT fmla upd stmt fmla =
+
+| infUT_skip:
+  forall p q:fmla, u:upd. 
+  valid_fmla (Fimplies p (Fupd u q)) ->
+  infUT p u Sskip q
+
+| infUT_assign:
+  forall p:fmla, q:fmla, x:ident, e:expr, u:upd.
+       valid_fmla (Fimplies p (Fupd u (Fupd (Uassign x e) q)))  -> 
+       infUT p u (Sassign x e) q
+
+| infUT_if:
+  forall p q:fmla, c1 c2 :stmt, b:bexpr, u:upd.
+  	 infUT (Fand p (Fupd u (Fembed b))) u c1 q -> 
+  	 infUT (Fand p (Fupd u (Fnot (Fembed b)))) u c2 q -> 
+  	 infUT p u (Sif b c1 c2) q
+
+| infUT_while:
+  forall p q:fmla, c :stmt, b:bexpr, inv ainv:fmla, u:upd.
+  	 valid_fmla (Fimplies p (Fupd u inv)) -> 
+         infUT (Fand inv (Fembed b)) Uskip c inv -> 
+  	 valid_fmla (Fimplies (Fand inv (Fnot (Fembed b))) q) -> 
+  	 infUT p u (Swhile b ainv c) q
+
+| infUT_skipseq:
+  forall p q:fmla, u:upd, c :stmt. 
+  	 infUT p u c q ->
+  	 infUT p u (Sseq Sskip c) q
+
+| infUT_assignseq:
+  forall p:fmla, q:fmla, x:ident, e:expr, c:stmt, u:upd.
+       	 infUT p (Upar u (Uupd u (Uassign x e))) c q -> 
+       	 infUT p u (Sseq (Sassign x e) c) q
+
+| infUT_ifseq:
+  forall p q:fmla, c1 c2 c:stmt, b:bexpr, u:upd.
+  	 infUT (Fand p (Fupd u (Fembed b))) u (Sseq c1 c) q -> 
+  	 infUT (Fand p (Fupd u (Fnot (Fembed b)))) u (Sseq c2 c) q -> 
+  	 infUT p u (Sseq (Sif b c1 c2) c) q
+
+| infUT_whileseq:
+  forall p q:fmla, c cc:stmt, b:bexpr, inv ainv :fmla, u:upd.
+  	 valid_fmla (Fimplies p (Fupd u inv)) -> 
+         infUT (Fand inv (Fembed b)) Uskip c inv -> 
+  	 infUT (Fand inv (Fnot (Fembed b))) Uskip cc q -> 
+  	 infUT p u (Sseq (Swhile b ainv c) cc) q
+
+| infUT_seqseq:
+  forall p q:fmla, c1 c2 c:stmt, u:upd.
+  	 infUT p u (Sseq c1 (Sseq c2 c)) q ->
+  	 infUT p u (Sseq (Sseq c1 c2) c) q
+
+end
+
+
+
+theory ReverseRules
+
+use export Semantics
+use export SystemDL
+
+(* Weakest precondition states *)
+
+predicate pre (s:state) (c:stmt) (q:fmla) =
+	  forall s' :state. big_step s c s' -> satisfies s' q
+
+
+(* Contrary to HL or HL with updates, expressiveness in DL is "built in" the logic   *)
+(* simply because the Fsqb operator allows for weakest preconditions to be expressed *)
+
+lemma expressiveness : forall c :stmt, q :fmla.
+      		       forall s :state. (satisfies s (Fsqb c q)) <-> pre s c q
+
+
+lemma skip_rule_rev:
+forall p q:fmla, u:upd.
+       validUT p u Sskip q -> valid_fmla (Fimplies p (Fupd u q))
+
+lemma assign_rule_rev:
+forall p:fmla, q:fmla, x:ident, e:expr, u:upd.
+       validUT p u (Sassign x e) q ->
+       valid_fmla (Fimplies p (Fupd u (Fupd (Uassign x e) q)))
+
+lemma while_rule_revFsqb:
+forall c:stmt, u:upd, b:bexpr, ainv p q :fmla.
+       validUT p u (Swhile b ainv c) q ->
+       let inv = Fsqb (Swhile b ainv c) q in
+       valid_fmla (Fimplies p (Fupd u inv)) /\
+       validUT (Fand inv (Fembed b)) Uskip c inv /\
+       valid_fmla (Fimplies (Fand inv (Fnot (Fembed b))) q)
+
+lemma seq_assign_rule_rev:
+forall p q:fmla, x:ident, e:expr, c:stmt, u:upd.
+       validUT p u (Sseq (Sassign x e) c) q ->
+       validUT p (Upar u (Uupd u (Uassign x e))) c q
+
+lemma seq_while_rule_rev_Fsqb:
+forall p q ainv:fmla, c cc:stmt, b:bexpr, u:upd.
+       validUT p u (Sseq (Swhile b ainv c) cc) q ->
+       let inv = Fsqb (Sseq (Swhile b ainv c) cc) q in
+       valid_fmla (Fimplies p (Fupd u inv)) /\
+       validUT (Fand inv (Fembed b)) Uskip c inv /\
+       validUT (Fand inv (Fnot (Fembed b))) Uskip cc q
+
+end
+
+
+
+theory DLSoundnessCompleteness
+
+use Semantics
+use SystemDL
+use Rules
+use ReverseRules
+
+let rec lemma infUT_sound_complete (c:stmt) = 
+    ensures { forall p q :fmla, u :upd. validUT p u c q <-> infUT p u c q  }
+    variant { size c }
+match c with
+| Sskip -> ()
+| Sassign _ _ -> ()
+| Sif _ c1 c2 -> infUT_sound_complete c1 ; infUT_sound_complete c2
+| Swhile _ _ c -> infUT_sound_complete c
+| Sseq Sskip c -> infUT_sound_complete c
+| Sseq (Sassign _ _) c -> infUT_sound_complete c
+| Sseq (Sif _ c1 c2) c -> infUT_sound_complete (Sseq c1 c) ; infUT_sound_complete (Sseq c2 c)
+| Sseq (Swhile _ _ c1) c -> infUT_sound_complete c1 ; infUT_sound_complete c
+| Sseq (Sseq c1 c2) c -> infUT_sound_complete (Sseq c1 (Sseq c2 c))
+end
+
+
+
+end 
+
+

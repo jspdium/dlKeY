@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE why3session PUBLIC "-//Why3//proof session v5//EN"
+"http://why3.lri.fr/why3session.dtd">
+<why3session shape_version="6">
+<prover id="0" name="Alt-Ergo" version="2.4.0" timelimit="5" steplimit="0" memlimit="1000"/>
+<prover id="1" name="CVC4" version="1.8" timelimit="1" steplimit="0" memlimit="1000"/>
+<prover id="2" name="Z3" version="4.8.6" timelimit="1" steplimit="0" memlimit="1000"/>
+<file format="whyml" proved="true">
+<path name=".."/><path name="upd-simpl.mlw"/>
+<theory name="UpdateApplication" proved="true">
+ <goal name="eq&#39;vc" expl="VC for eq" proved="true">
+ <proof prover="2" timelimit="5"><result status="valid" time="0.04" steps="43542"/></proof>
+ </goal>
+ <goal name="indom_exec&#39;vc" expl="VC for indom_exec" proved="true">
+ <proof prover="1" timelimit="5"><result status="valid" time="0.11" steps="15820"/></proof>
+ </goal>
+ <goal name="concat&#39;vc" expl="VC for concat" proved="true">
+ <transf name="split_vc" proved="true" >
+  <goal name="concat&#39;vc.0" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.02" steps="12417"/></proof>
+  </goal>
+  <goal name="concat&#39;vc.1" expl="precondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.03" steps="54651"/></proof>
+  </goal>
+  <goal name="concat&#39;vc.2" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.02" steps="12914"/></proof>
+  </goal>
+  <goal name="concat&#39;vc.3" expl="precondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.03" steps="52420"/></proof>
+  </goal>
+  <goal name="concat&#39;vc.4" expl="unreachable point" proved="true">
+  <proof prover="1"><result status="valid" time="0.07" steps="15004"/></proof>
+  </goal>
+  <goal name="concat&#39;vc.5" expl="postcondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.03" steps="48688"/></proof>
+  </goal>
+  <goal name="concat&#39;vc.6" expl="postcondition" proved="true">
+  <transf name="split_vc" proved="true" >
+   <goal name="concat&#39;vc.6.0" expl="postcondition" proved="true">
+   <proof prover="2"><result status="valid" time="0.05" steps="105407"/></proof>
+   </goal>
+   <goal name="concat&#39;vc.6.1" expl="postcondition" proved="true">
+   <proof prover="2"><result status="valid" time="0.03" steps="53229"/></proof>
+   </goal>
+   <goal name="concat&#39;vc.6.2" expl="postcondition" proved="true">
+   <proof prover="0" timelimit="1"><result status="valid" time="0.05" steps="310"/></proof>
+   </goal>
+  </transf>
+  </goal>
+ </transf>
+ </goal>
+ <goal name="lookup&#39;vc" expl="VC for lookup" proved="true">
+ <proof prover="0"><result status="valid" time="0.23" steps="2453"/></proof>
+ </goal>
+ <goal name="applyE&#39;vc" expl="VC for applyE" proved="true">
+ <transf name="split_vc" proved="true" >
+  <goal name="applyE&#39;vc.0" expl="precondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.02" steps="3742"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.1" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.03" steps="56209"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.2" expl="precondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.02" steps="3742"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.3" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="56652"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.4" expl="precondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.03" steps="3756"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.5" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.10" steps="166144"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.6" expl="precondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.02" steps="3742"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.7" expl="precondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.02" steps="5452"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.8" expl="variant decrease" proved="true">
+  <proof prover="2"><result status="valid" time="0.04" steps="63084"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.9" expl="precondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.02" steps="3776"/></proof>
+  </goal>
+  <goal name="applyE&#39;vc.10" expl="postcondition" proved="true">
+  <transf name="split_vc" proved="true" >
+   <goal name="applyE&#39;vc.10.0" expl="postcondition" proved="true">
+   <proof prover="1"><result status="valid" time="0.08" steps="15951"/></proof>
+   </goal>
+   <goal name="applyE&#39;vc.10.1" expl="postcondition" proved="true">
+   <proof prover="2"><result status="valid" time="0.02" steps="17606"/></proof>
+   </goal>
+   <goal name="applyE&#39;vc.10.2" expl="postcondition" proved="true">
+   <proof prover="0" timelimit="1"><result status="valid" time="0.04" steps="315"/></proof>
+   </goal>
+   <goal name="applyE&#39;vc.10.3" expl="postcondition" proved="true">
+   <proof prover="0" timelimit="1"><result status="valid" time="0.04" steps="259"/></proof>
+   </goal>
+  </transf>
+  </goal>
+  <goal name="applyE&#39;vc.11" expl="postcondition" proved="true">
+  <proof prover="2"><result status="valid" time="0.03" steps="50987"/></proof>
+  </goal>
+ </transf>
+ </goal>
+ <goal name="applyU&#39;vc" expl="VC for applyU" proved="true">
+ <proof prover="0"><result status="valid" time="0.29" steps="3089"/></proof>
+ </goal>
+ <goal name="applyB&#39;vc" expl="VC for applyB" proved="true">
+ <proof prover="0"><result status="valid" time="2.34" steps="32590"/></proof>
+ </goal>
+ <goal name="applyF&#39;vc" expl="VC for applyF" proved="true">
+ <proof prover="0"><result status="valid" time="3.36" steps="40466"/></proof>
+ </goal>
+</theory>
+<theory name="Simplification" proved="true">
+ <goal name="simplE&#39;vc" expl="VC for simplE" proved="true">
+ <proof prover="0"><result status="valid" time="0.26" steps="3203"/></proof>
+ </goal>
+ <goal name="simplU&#39;vc" expl="VC for simplU" proved="true">
+ <proof prover="0"><result status="valid" time="0.53" steps="5531"/></proof>
+ </goal>
+ <goal name="simplB&#39;vc" expl="VC for simplB" proved="true">
+ <proof prover="0"><result status="valid" time="0.63" steps="8034"/></proof>
+ </goal>
+ <goal name="simplF&#39;vc" expl="VC for simplF" proved="true">
+ <proof prover="0"><result status="valid" time="2.14" steps="35644"/></proof>
+ </goal>
+</theory>
+</file>
+</why3session>

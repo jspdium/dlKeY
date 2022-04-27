@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE why3session PUBLIC "-//Why3//proof session v5//EN"
+"http://why3.lri.fr/why3session.dtd">
+<why3session shape_version="6">
+<prover id="0" name="Alt-Ergo" version="2.4.0" timelimit="5" steplimit="0" memlimit="1000"/>
+<prover id="1" name="Z3" version="4.8.6" timelimit="5" steplimit="0" memlimit="1000"/>
+<file format="whyml" proved="true">
+<path name=".."/><path name="dl-exec-vcgen.mlw"/>
+<theory name="VCGenExtr" proved="true">
+ <goal name="addSet&#39;vc" expl="VC for addSet" proved="true">
+ <proof prover="0"><result status="valid" time="1.05" steps="12738"/></proof>
+ </goal>
+ <goal name="addFOLex&#39;vc" expl="VC for addFOLex" proved="true">
+ <proof prover="1"><result status="valid" time="0.08" steps="213919"/></proof>
+ </goal>
+ <goal name="vcgex&#39;vc" expl="VC for vcgex" proved="true">
+ <proof prover="1"><result status="valid" time="1.50" steps="3030170"/></proof>
+ </goal>
+ <goal name="vcgen_main&#39;vc" expl="VC for vcgen_main" proved="true">
+ <proof prover="1"><result status="valid" time="0.08" steps="204456"/></proof>
+ </goal>
+</theory>
+</file>
+</why3session>

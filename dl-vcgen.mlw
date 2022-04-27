@@ -1,0 +1,120 @@
+
+
+theory FOLformulas
+
+use dl.Semantics
+use export set.Fset
+
+
+(* Pure FOL formulas without updates or modalities *)
+
+type fmlaFOL =
+     | FOLcomp expr boperator expr
+     | FOLembed bexpr
+     | FOLtrue
+     | FOLfalse
+     | FOLand fmlaFOL fmlaFOL
+     | FOLor fmlaFOL fmlaFOL
+     | FOLnot fmlaFOL
+     | FOLimplies fmlaFOL fmlaFOL
+
+predicate satisfiesFOL (s:state) (p:fmlaFOL) =
+match p with
+      | FOLcomp e1 bop e2 -> eval_bop  (eval_expr s e1) bop (eval_expr s e2) 
+      | FOLembed b ->  (eval_bexpr s b)
+      | FOLtrue -> true 
+      | FOLfalse -> false
+      | FOLand p1 p2 -> (satisfiesFOL s p1) /\ (satisfiesFOL s p2) 
+      | FOLor p1 p2 ->  (satisfiesFOL s p1) \/ (satisfiesFOL s p2) 
+      | FOLnot p1 -> not (satisfiesFOL s p1) 
+      | FOLimplies p1 p2 -> (not (satisfiesFOL s p1)) \/ (satisfiesFOL s p2)
+end
+
+predicate valid_fmlaFOL (p:fmlaFOL) = forall s:state. satisfiesFOL s p
+
+predicate equivFOL (p:fmlaFOL) (q:fmla) =
+	  forall s :state. satisfiesFOL s p <-> satisfies s q
+
+let rec function toFOL (p:fmla) : fmlaFOL =
+    requires { stmt_freeF p /\ upd_freeF p }
+    ensures  { equivFOL result p }
+    variant  { p }
+match p with
+      | Fcomp e1 bop e2 -> FOLcomp e1 bop e2
+      | Fembed b ->  FOLembed b
+      | Ftrue -> FOLtrue 
+      | Ffalse -> FOLfalse
+      | Fand p1 p2 -> FOLand (toFOL p1) (toFOL p2)
+      | For p1 p2 -> FOLor (toFOL p1) (toFOL p2)
+      | Fnot p1 -> FOLnot (toFOL p1) 
+      | Fimplies p1 p2 -> FOLimplies (toFOL p1) (toFOL p2)
+      | Fsqb _ _ ->  absurd
+      | Fupd _ _ ->  absurd 
+end
+
+
+predicate valid_fmlas (g: fset fmlaFOL) = forall p :fmlaFOL. mem p g -> valid_fmlaFOL p
+
+
+end
+
+
+
+
+
+
+module VCGenDL
+
+use export dl.SystemDL
+use export dl.Rules
+use export FOLformulas
+use "upd-simpl".Simplification
+
+
+(* add formulas to fsets, converting them to fmlaFOL *)
+
+let ghost function singletonFOL (p:fmla) : fset fmlaFOL =
+    requires { stmt_freeF p /\ upd_freeF p }
+    ensures  { valid_fmlas result <-> valid_fmla p } 
+singleton (toFOL p)
+
+let ghost function addFOL (p:fmla) (v:fset fmlaFOL) : fset fmlaFOL = 
+    requires { stmt_freeF p /\ upd_freeF p }
+    ensures  { result = add (toFOL p) v }
+    ensures  { valid_fmlas result <-> valid_fmla p /\ valid_fmlas v } 
+add (toFOL p) v
+
+
+
+
+let rec ghost function vcgen (p:fmla) (u:upd) (c:stmt) (q:fmla) : fset fmlaFOL =
+    requires { stmt_freeF p /\ upd_freeF p /\ parUpd u /\ progInv c /\ stmt_freeF q }
+    ensures  { valid_fmlas result -> validUT p u c q }
+    variant  { size c }
+match c with
+      | Sskip -> singletonFOL (Fimplies p (applyF u q))
+      | Sassign x e -> singletonFOL (Fimplies p (applyF u (applyF (Uassign x e) q)))
+      | Sif b c1 c2 -> union (vcgen (Fand p (applyF u (Fembed b))) u c1 q)
+      	      	       	     (vcgen (Fand p (applyF u (Fnot (Fembed b)))) u c2 q)
+      | Swhile b inv c1 -> addFOL (Fimplies p (applyF u inv))
+      	       	     	          (addFOL (Fimplies (Fand inv (Fnot (Fembed b))) (simplF q))
+      	  	    	                  (vcgen (Fand inv (Fembed b)) Uskip c1 inv))
+      | (Sseq (Sskip) c) -> vcgen p u c q
+      | (Sseq (Sassign x e) c) -> vcgen p (concat u (applyU u (Uassign x e))) c q
+      | (Sseq (Sif b c1 c2) c) ->  union (vcgen (Fand p (applyF u (Fembed b))) u (Sseq c1 c) q)
+      	      	     	       	         (vcgen (Fand p (applyF u (Fnot (Fembed b)))) u (Sseq c2 c) q)
+      | (Sseq (Swhile b inv c1) c) -> addFOL (Fimplies p (applyF u inv))
+      	  	    	       	     	     (union (vcgen (Fand inv (Fembed b)) Uskip c1 inv)
+      			     	       	      	    (vcgen (Fand inv (Fnot (Fembed b))) Uskip c q))
+      |	(Sseq (Sseq c1 c2) c) -> vcgen p u (Sseq c1 (Sseq c2 c)) q
+end
+
+
+end
+
+
+
+
+
+
+
